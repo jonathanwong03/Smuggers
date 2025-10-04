@@ -68,7 +68,7 @@ function parseCSV(csvText) {
 // Load CSV on server start
 function loadCSVData() {
   try {
-    const csvPath = path.join(__dirname, 'data', 'air_quality.csv');
+    const csvPath = path.join(__dirname, 'data', 'Air_Quality.csv');
     const csvText = fs.readFileSync(csvPath, 'utf-8');
     csvData = parseCSV(csvText);
     console.log(`✓ Loaded ${csvData.length} records from CSV`);
@@ -76,6 +76,10 @@ function loadCSVData() {
     // Log unique locations
     const locations = [...new Set(csvData.map(r => r['Geo Join ID']))];
     console.log(`✓ Found ${locations.length} unique locations`);
+    
+    // Log unique pollutants
+    const pollutants = [...new Set(csvData.map(r => r['Name']))];
+    console.log(`✓ Found ${pollutants.length} unique pollutants`);
     
     return true;
   } catch (error) {
@@ -152,15 +156,36 @@ function getLocationData(geoId) {
   if (locationRecords.length === 0) return null;
   
   // Get latest NO2 and PM2.5 values
-  const latestNO2 = locationRecords.find(r => r['Indicator ID'] === '375');
-  const latestPM25 = locationRecords.find(r => r['Indicator ID'] === '365');
+  const latestNO2 = locationRecords.find(r => r['Name'] && r['Name'].includes('Nitrogen dioxide'));
+  const latestPM25 = locationRecords.find(r => r['Name'] && r['Name'].includes('Fine particles'));
+  const latestO3 = locationRecords.find(r => r['Name'] && r['Name'].includes('Ozone'));
   
   return {
     no2: latestNO2 ? parseFloat(latestNO2['Data Value']) : null,
     pm25: latestPM25 ? parseFloat(latestPM25['Data Value']) : null,
-    location: locationMap[geoId] || `Location ${geoId}`,
-    geoId: geoId
+    o3: latestO3 ? parseFloat(latestO3['Data Value']) : null,
+    location: locationRecords[0]['Geo Place Name'] || locationMap[geoId] || `Location ${geoId}`,
+    geoId: geoId,
+    lastUpdated: locationRecords[0]['Start_Date']
   };
+}
+
+// Get location by coordinates (approximate matching)
+function getLocationByCoords(lat, lng) {
+  // Simple mapping of coordinates to NYC areas
+  const coordMap = {
+    '40.7128,-74.0060': '107', // Manhattan (default NYC coords)
+    '40.7589,-73.9851': '107', // Times Square area
+    '40.7829,-73.9654': '107', // Central Park
+    '40.7282,-73.7949': '407', // Queens
+    '40.6413,-73.7781': '407', // JFK area
+    '40.8448,-73.8648': '201', // Bronx
+    '40.6892,-73.9442': '314', // Brooklyn
+    '40.5795,-74.1502': '414'  // Staten Island
+  };
+  
+  const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+  return coordMap[coordKey] || '107'; // Default to Manhattan
 }
 
 // ============================================
@@ -172,8 +197,13 @@ app.get('/api/air-quality', (req, res) => {
   try {
     console.log('📊 Air quality data requested from CSV');
     
-    // Get location from query or use default
-    const geoId = req.query.location || '407';
+    // Get location from query parameters
+    let geoId;
+    if (req.query.lat && req.query.lng) {
+      geoId = getLocationByCoords(parseFloat(req.query.lat), parseFloat(req.query.lng));
+    } else {
+      geoId = req.query.location || '107'; // Default to Manhattan
+    }
     
     // Get data from CSV
     const data = getLocationData(geoId);
@@ -189,39 +219,32 @@ app.get('/api/air-quality', (req, res) => {
     const aqi = calculateAQI(data.no2, data.pm25);
     const category = getAQICategory(aqi);
     
-    // Generate forecast (simple trend-based)
-    const variation = Math.random() * 10 - 5;
-    const forecast = [
-      { 
-        day: "Tomorrow", 
-        aqi: Math.max(0, Math.round(aqi + variation))
-      },
-      { 
-        day: "Day after tomorrow", 
-        aqi: Math.max(0, Math.round(aqi + variation * 1.2))
-      }
-    ];
-    
     // Format response for your frontend
     const response = {
       location: data.location,
       aqi: aqi,
       pollutants: [
-        { name: "O3", value: Math.random() * 0.1 },
         { name: "NO2", value: data.no2 || 0 },
-        { name: "SO2", value: Math.random() * 0.02 },
         { name: "PM2.5", value: data.pm25 || 0 },
-        { name: "PM10", value: (data.pm25 || 0) * 1.5 }
+        { name: "O3", value: data.o3 || Math.random() * 0.1 },
+        { name: "SO2", value: Math.random() * 0.02 },
+        { name: "PM10", value: (data.pm25 || 0) * 1.5 },
+        { name: "CO", value: Math.random() * 2 }
       ],
-      forecast: forecast,
       weather: {
         temperature: 20 + Math.random() * 10,
         humidity: 50 + Math.random() * 30,
-        windSpeed: Math.random() * 20
+        windSpeed: Math.random() * 20,
+        windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.floor(Math.random() * 8)],
+        pressure: 1013 + Math.random() * 20 - 10,
+        visibility: 8 + Math.random() * 4
       },
       category: category,
+      primaryPollutant: data.pm25 > (data.no2 || 0) / 2 ? 'PM2.5' : 'NO2',
+      lastUpdated: data.lastUpdated,
       timestamp: new Date().toISOString(),
-      source: 'CSV Historical Data'
+      source: 'NYC Air Quality Historical Data',
+      trend: Math.random() > 0.5 ? (Math.random() > 0.5 ? 1 : -1) : 0
     };
     
     console.log(`✓ Sent data for ${data.location} - AQI: ${aqi}`);
@@ -231,6 +254,71 @@ app.get('/api/air-quality', (req, res) => {
     console.error('❌ Error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch air quality data',
+      message: error.message 
+    });
+  }
+});
+
+// Forecast endpoint for frontend
+app.get('/api/forecast', (req, res) => {
+  try {
+    console.log('📈 Forecast data requested');
+    
+    // Get location from query parameters
+    let geoId;
+    if (req.query.lat && req.query.lng) {
+      geoId = getLocationByCoords(parseFloat(req.query.lat), parseFloat(req.query.lng));
+    } else {
+      geoId = req.query.location || '107';
+    }
+    
+    const hours = parseInt(req.query.hours) || 24;
+    const data = getLocationData(geoId);
+    
+    if (!data) {
+      return res.status(404).json({
+        error: 'No data found for this location'
+      });
+    }
+    
+    // Generate forecast based on historical data with some variation
+    const baseAqi = calculateAQI(data.no2, data.pm25);
+    const forecast = [];
+    
+    for (let i = 0; i < hours; i++) {
+      const time = new Date();
+      time.setHours(time.getHours() + i);
+      
+      // Add some realistic variation based on time of day
+      const hourOfDay = time.getHours();
+      let variation = 0;
+      
+      // Higher pollution during rush hours (7-9 AM, 5-7 PM)
+      if ((hourOfDay >= 7 && hourOfDay <= 9) || (hourOfDay >= 17 && hourOfDay <= 19)) {
+        variation = 10 + Math.random() * 15;
+      } else if (hourOfDay >= 22 || hourOfDay <= 5) {
+        // Lower pollution at night
+        variation = -10 - Math.random() * 10;
+      } else {
+        variation = Math.random() * 20 - 10;
+      }
+      
+      const forecastAqi = Math.max(10, Math.min(200, Math.round(baseAqi + variation)));
+      
+      forecast.push({
+        time: time.toISOString(),
+        aqi: forecastAqi,
+        temperature: 20 + Math.sin(i * 0.2) * 10 + Math.random() * 5,
+        humidity: 50 + Math.cos(i * 0.15) * 20 + Math.random() * 10
+      });
+    }
+    
+    res.json(forecast);
+    
+  } catch (error) {
+    console.error('❌ Forecast Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch forecast data',
       message: error.message 
     });
   }

@@ -4,6 +4,7 @@
   padding: 1.5rem;
   box-shadow: var(--shadow-card);
   border: 1px solid var(--border-color);
+  overflow: hidden; /* Prevent any overflow from the container */
 }
 
 .weather-info h3 {
@@ -18,6 +19,8 @@
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .weather-item {
@@ -30,6 +33,9 @@
   border-radius: 12px;
   border: 1px solid var(--border-color);
   transition: transform 0.2s ease;
+  min-width: 0; /* Allow shrinking */
+  overflow: hidden; /* Prevent overflow */
+  word-wrap: break-word; /* Break long words */
 }
 
 .weather-item:hover {
@@ -39,24 +45,33 @@
 .weather-icon {
   font-size: 1.8rem;
   margin-bottom: 0.5rem;
+  flex-shrink: 0; /* Don't shrink the icon */
 }
 
 .weather-details {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  width: 100%; /* Take full width of container */
+  min-width: 0; /* Allow shrinking */
 }
 
 .weather-value {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
+  word-break: break-all; /* Break long numbers */
+  overflow-wrap: break-word; /* Wrap if needed */
+  line-height: 1.2;
 }
 
 .weather-label {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 500;
+  white-space: nowrap; /* Keep labels on one line */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Add ... if too long */
 }
 
 .weather-summary {
@@ -111,6 +126,7 @@
   
   .weather-item {
     padding: 0.75rem;
+    min-width: 0; /* Ensure proper shrinking on mobile */
   }
   
   .weather-icon {
@@ -119,11 +135,29 @@
   
   .weather-value {
     font-size: 1rem;
+    word-break: break-all; /* Ensure numbers break properly on mobile */
+  }
+  
+  .weather-label {
+    font-size: 0.75rem;
   }
 }
 
 @media (max-width: 480px) {
   .weather-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr); /* Keep 2 columns even on small screens */
+    gap: 0.5rem;
+  }
+  
+  .weather-item {
+    padding: 0.5rem;
+  }
+  
+  .weather-value {
+    font-size: 0.9rem;
+  }
+  
+  .weather-label {
+    font-size: 0.7rem;
   }
 }
