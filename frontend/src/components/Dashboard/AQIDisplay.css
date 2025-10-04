@@ -1,0 +1,174 @@
+.aqi-display {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
+}
+
+.aqi-main {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.aqi-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.aqi-inner {
+  width: 90px;
+  height: 90px;
+  background: var(--bg-card);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.aqi-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.aqi-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.aqi-info {
+  flex: 1;
+}
+
+.aqi-status {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.aqi-location {
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.aqi-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.trend-icon {
+  font-size: 1.2rem;
+}
+
+.trend-text {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.health-message {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.aqi-details {
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Compact view */
+.aqi-display.compact {
+  padding: 1rem;
+}
+
+.aqi-display.compact .aqi-main {
+  gap: 1rem;
+  margin-bottom: 0;
+}
+
+.aqi-display.compact .aqi-circle {
+  width: 80px;
+  height: 80px;
+}
+
+.aqi-display.compact .aqi-inner {
+  width: 60px;
+  height: 60px;
+}
+
+.aqi-display.compact .aqi-value {
+  font-size: 1.8rem;
+}
+
+.aqi-display.compact .aqi-status {
+  font-size: 1.2rem;
+}
+
+.aqi-display.compact .aqi-location {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+/* Detailed view */
+.aqi-display.detailed .aqi-circle {
+  width: 140px;
+  height: 140px;
+}
+
+.aqi-display.detailed .aqi-inner {
+  width: 110px;
+  height: 110px;
+}
+
+.aqi-display.detailed .aqi-value {
+  font-size: 3rem;
+}
+
+@media (max-width: 768px) {
+  .aqi-main {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .aqi-details {
+    grid-template-columns: 1fr;
+  }
+}
