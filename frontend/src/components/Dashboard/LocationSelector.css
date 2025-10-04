@@ -131,8 +131,28 @@
   background: var(--hover-bg);
 }
 
-.location-name {
+.location-details {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.location-name {
+  font-weight: 500;
+}
+
+.location-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.loading-states {
+  padding: 0.75rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 /* Scrollbar styling */

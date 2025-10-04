@@ -16,7 +16,7 @@ export const AirQualityProvider = ({ children }) => {
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [location, setLocation] = useState({ lat: 40.7128, lng: -74.0060, name: 'New York, NY' });
+  const [location, setLocation] = useState({ lat: 39.8283, lng: -98.5795, name: 'United States' });
   const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
 
   const getAqiColor = (aqi) => {
@@ -37,12 +37,19 @@ export const AirQualityProvider = ({ children }) => {
     return 'Hazardous';
   };
 
-  const fetchAirQuality = async (lat = location.lat, lng = location.lng) => {
+  const fetchAirQuality = async (lat = location.lat, lng = location.lng, state = location.state) => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/air-quality', {
-        params: { lat, lng }
-      });
+      const params = {};
+      
+      if (state) {
+        params.state = state;
+      } else {
+        params.lat = lat;
+        params.lng = lng;
+      }
+      
+      const response = await axios.get('/api/air-quality', { params });
       setAirQuality(response.data);
       setError(null);
     } catch (err) {
@@ -53,11 +60,18 @@ export const AirQualityProvider = ({ children }) => {
     }
   };
 
-  const fetchForecast = async (lat = location.lat, lng = location.lng, hours = 24) => {
+  const fetchForecast = async (lat = location.lat, lng = location.lng, hours = 24, state = location.state) => {
     try {
-      const response = await axios.get('/api/forecast', {
-        params: { lat, lng, hours }
-      });
+      const params = { hours };
+      
+      if (state) {
+        params.state = state;
+      } else {
+        params.lat = lat;
+        params.lng = lng;
+      }
+      
+      const response = await axios.get('/api/forecast', { params });
       setForecast(response.data);
     } catch (err) {
       console.error('Failed to fetch forecast:', err);
@@ -66,8 +80,13 @@ export const AirQualityProvider = ({ children }) => {
 
   const updateLocation = (newLocation) => {
     setLocation(newLocation);
-    fetchAirQuality(newLocation.lat, newLocation.lng);
-    fetchForecast(newLocation.lat, newLocation.lng);
+    if (newLocation.type === 'state') {
+      fetchAirQuality(null, null, newLocation.state);
+      fetchForecast(null, null, 24, newLocation.state);
+    } else {
+      fetchAirQuality(newLocation.lat, newLocation.lng);
+      fetchForecast(newLocation.lat, newLocation.lng);
+    }
   };
 
   const getCurrentLocation = () => {

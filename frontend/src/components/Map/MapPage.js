@@ -20,20 +20,31 @@ const MapPage = () => {
   const [mapView, setMapView] = useState('heatmap'); // heatmap, stations, both
   const [loading, setLoading] = useState(true);
 
-  // Mock air quality monitoring stations
+  // US air quality monitoring stations based on real data
   const generateMockStations = () => {
     const stations = [];
     const baseLocations = [
-      { name: 'Downtown NYC', lat: 40.7589, lng: -73.9851 },
-      { name: 'Central Park', lat: 40.7829, lng: -73.9654 },
-      { name: 'Brooklyn Bridge', lat: 40.7061, lng: -73.9969 },
-      { name: 'Times Square', lat: 40.7580, lng: -73.9855 },
-      { name: 'Wall Street', lat: 40.7074, lng: -74.0113 },
-      { name: 'Harlem', lat: 40.8176, lng: -73.9482 },
-      { name: 'Queens', lat: 40.7282, lng: -73.7949 },
-      { name: 'Bronx', lat: 40.8448, lng: -73.8648 },
-      { name: 'Staten Island', lat: 40.5795, lng: -74.1502 },
-      { name: 'JFK Airport', lat: 40.6413, lng: -73.7781 }
+      // Major US cities with real coordinates
+      { name: 'New York, NY', lat: 40.7128, lng: -74.0060 },
+      { name: 'Los Angeles, CA', lat: 34.0522, lng: -118.2437 },
+      { name: 'Chicago, IL', lat: 41.8781, lng: -87.6298 },
+      { name: 'Houston, TX', lat: 29.7604, lng: -95.3698 },
+      { name: 'Phoenix, AZ', lat: 33.4484, lng: -112.0740 },
+      { name: 'Philadelphia, PA', lat: 39.9526, lng: -75.1652 },
+      { name: 'San Antonio, TX', lat: 29.4241, lng: -98.4936 },
+      { name: 'San Diego, CA', lat: 32.7157, lng: -117.1611 },
+      { name: 'Dallas, TX', lat: 32.7767, lng: -96.7970 },
+      { name: 'San Jose, CA', lat: 37.3382, lng: -121.8863 },
+      { name: 'Austin, TX', lat: 30.2672, lng: -97.7431 },
+      { name: 'Jacksonville, FL', lat: 30.3322, lng: -81.6557 },
+      { name: 'Fort Worth, TX', lat: 32.7555, lng: -97.3308 },
+      { name: 'Columbus, OH', lat: 39.9612, lng: -82.9988 },
+      { name: 'Charlotte, NC', lat: 35.2271, lng: -80.8431 },
+      { name: 'San Francisco, CA', lat: 37.7749, lng: -122.4194 },
+      { name: 'Indianapolis, IN', lat: 39.7684, lng: -86.1581 },
+      { name: 'Seattle, WA', lat: 47.6062, lng: -122.3321 },
+      { name: 'Denver, CO', lat: 39.7392, lng: -104.9903 },
+      { name: 'Boston, MA', lat: 42.3601, lng: -71.0589 }
     ];
 
     baseLocations.forEach((loc, index) => {
@@ -56,11 +67,104 @@ const MapPage = () => {
   };
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setMapData(generateMockStations());
-      setLoading(false);
-    }, 1000);
+    // Fetch real US states data with statistics from backend
+    const fetchMapData = async () => {
+      try {
+        const response = await fetch('/api/map-stats');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.stateData) {
+            // State coordinates mapping
+            const stateCoords = {
+              'Alabama': { lat: 32.3617, lng: -86.2792 },
+              'Alaska': { lat: 64.0685, lng: -152.2782 },
+              'Arizona': { lat: 34.2744, lng: -111.2847 },
+              'Arkansas': { lat: 34.7519, lng: -92.1313 },
+              'California': { lat: 36.7783, lng: -119.4179 },
+              'Colorado': { lat: 39.5501, lng: -105.7821 },
+              'Connecticut': { lat: 41.6032, lng: -73.0877 },
+              'Delaware': { lat: 39.1612, lng: -75.5264 },
+              'Florida': { lat: 27.7663, lng: -82.6404 },
+              'Georgia': { lat: 32.1656, lng: -82.9001 },
+              'Hawaii': { lat: 19.8968, lng: -155.5828 },
+              'Idaho': { lat: 44.0682, lng: -114.7420 },
+              'Illinois': { lat: 40.6331, lng: -89.3985 },
+              'Indiana': { lat: 40.2732, lng: -86.1349 },
+              'Iowa': { lat: 41.8780, lng: -93.0977 },
+              'Kansas': { lat: 39.0119, lng: -98.4842 },
+              'Kentucky': { lat: 37.8393, lng: -84.2700 },
+              'Louisiana': { lat: 30.9843, lng: -91.9623 },
+              'Maine': { lat: 45.2538, lng: -69.4455 },
+              'Maryland': { lat: 39.0458, lng: -76.6413 },
+              'Massachusetts': { lat: 42.4072, lng: -71.3824 },
+              'Michigan': { lat: 44.3467, lng: -85.4102 },
+              'Minnesota': { lat: 46.7296, lng: -94.6859 },
+              'Mississippi': { lat: 32.3547, lng: -89.3985 },
+              'Missouri': { lat: 37.9643, lng: -91.8318 },
+              'Montana': { lat: 47.0527, lng: -109.6333 },
+              'Nebraska': { lat: 41.4925, lng: -99.9018 },
+              'Nevada': { lat: 38.8026, lng: -116.4194 },
+              'New Hampshire': { lat: 43.1939, lng: -71.5724 },
+              'New Jersey': { lat: 40.0583, lng: -74.4057 },
+              'New Mexico': { lat: 34.5199, lng: -105.8701 },
+              'New York': { lat: 43.2994, lng: -74.2179 },
+              'North Carolina': { lat: 35.7596, lng: -79.0193 },
+              'North Dakota': { lat: 47.5515, lng: -101.0020 },
+              'Ohio': { lat: 40.4173, lng: -82.9071 },
+              'Oklahoma': { lat: 35.0078, lng: -97.0929 },
+              'Oregon': { lat: 43.8041, lng: -120.5542 },
+              'Pennsylvania': { lat: 41.2033, lng: -77.1945 },
+              'Rhode Island': { lat: 41.6809, lng: -71.5118 },
+              'South Carolina': { lat: 33.8361, lng: -81.1637 },
+              'South Dakota': { lat: 43.9695, lng: -99.9018 },
+              'Tennessee': { lat: 35.5175, lng: -86.5804 },
+              'Texas': { lat: 31.9686, lng: -99.9018 },
+              'Utah': { lat: 39.3210, lng: -111.0937 },
+              'Vermont': { lat: 44.5588, lng: -72.5805 },
+              'Virginia': { lat: 37.4316, lng: -78.6569 },
+              'Washington': { lat: 47.7511, lng: -120.7401 },
+              'West Virginia': { lat: 38.3498, lng: -80.6201 },
+              'Wisconsin': { lat: 43.7844, lng: -88.7879 },
+              'Wyoming': { lat: 43.0759, lng: -107.2903 }
+            };
+
+            // Convert backend data to map stations
+            const mapStations = data.stateData.map((stateData, index) => {
+              const coords = stateCoords[stateData.state];
+              if (!coords) return null;
+              
+              return {
+                id: index,
+                name: stateData.state,
+                lat: coords.lat,
+                lng: coords.lng,
+                aqi: stateData.aqi,
+                pm25: stateData.pm25,
+                pm10: stateData.pm25 * 1.5, // Estimate PM10 from PM2.5
+                no2: Math.random() * 30 + 10, // Mock NO2 data
+                o3: Math.random() * 80 + 20, // Mock O3 data
+                counties: stateData.counties,
+                lastUpdated: new Date().toISOString()
+              };
+            }).filter(Boolean);
+
+            setMapData(mapStations);
+            console.log(`✓ Loaded ${mapStations.length} states with real AQI data`);
+          } else {
+            throw new Error('Invalid response format');
+          }
+        } else {
+          throw new Error('Failed to fetch map statistics');
+        }
+      } catch (error) {
+        console.error('Failed to fetch real data, using fallback:', error);
+        setMapData(generateMockStations());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMapData();
   }, []);
 
   const createCustomIcon = (aqi) => {
@@ -101,11 +205,42 @@ const MapPage = () => {
 
   const handleMapClick = (e) => {
     const { lat, lng } = e.latlng;
-    updateLocation({
-      lat: lat,
-      lng: lng,
-      name: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
-    });
+    
+    // Find the closest state to the clicked coordinates
+    const findClosestState = (clickLat, clickLng) => {
+      let closestState = null;
+      let minDistance = Infinity;
+      
+      mapData.forEach(station => {
+        const distance = Math.sqrt(
+          Math.pow(station.lat - clickLat, 2) + Math.pow(station.lng - clickLng, 2)
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestState = station;
+        }
+      });
+      
+      return closestState;
+    };
+    
+    const closestState = findClosestState(lat, lng);
+    
+    if (closestState) {
+      updateLocation({
+        lat: closestState.lat,
+        lng: closestState.lng,
+        name: closestState.name,
+        type: 'state',
+        state: closestState.name
+      });
+    } else {
+      updateLocation({
+        lat: lat,
+        lng: lng,
+        name: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+      });
+    }
   };
 
   if (loading) {
@@ -153,8 +288,8 @@ const MapPage = () => {
 
       <div className="map-container">
         <MapContainer
-          center={[location.lat, location.lng]}
-          zoom={11}
+          center={[39.8283, -98.5795]} // Center of USA
+          zoom={4} // Zoom level to show entire continental US
           style={{ height: '100%', width: '100%' }}
           onClick={handleMapClick}
         >
@@ -163,15 +298,17 @@ const MapPage = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {/* Current location marker */}
-          <Marker position={[location.lat, location.lng]}>
-            <Popup>
-              <div className="popup-content">
-                <h3>📍 Your Location</h3>
-                <p>{location.name}</p>
-              </div>
-            </Popup>
-          </Marker>
+          {/* Current location marker - only show if we have valid coordinates */}
+          {location.lat && location.lng && location.lat !== 40.0 && (
+            <Marker position={[location.lat, location.lng]}>
+              <Popup>
+                <div className="popup-content">
+                  <h3>📍 Your Location</h3>
+                  <p>{location.name}</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
 
           {/* Air quality stations */}
           {(mapView === 'stations' || mapView === 'both') && mapData.map(station => (
@@ -315,13 +452,19 @@ const MapPage = () => {
             </div>
             <div className="stat-item">
               <span className="stat-value">
-                {Math.round(mapData.reduce((sum, station) => sum + station.aqi, 0) / mapData.length)}
+                {mapData.length > 0 ? 
+                  Math.round(mapData.reduce((sum, station) => sum + (station.aqi || 0), 0) / mapData.length) : 
+                  0
+                }
               </span>
               <span className="stat-label">Average AQI</span>
             </div>
             <div className="stat-item">
               <span className="stat-value">
-                {Math.max(...mapData.map(s => s.aqi))}
+                {mapData.length > 0 ? 
+                  Math.max(...mapData.map(s => s.aqi || 0)) : 
+                  0
+                }
               </span>
               <span className="stat-label">Highest AQI</span>
             </div>
