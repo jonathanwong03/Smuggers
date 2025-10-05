@@ -69,7 +69,6 @@ function parseCSV(csvText) {
 let nycData = [];
 let usData = [];
 let csvData = [];
-let airQualityData = [];
 
 // Load CSV data on server start
 function loadCSVData() {
