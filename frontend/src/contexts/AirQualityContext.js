@@ -16,7 +16,7 @@ export const AirQualityProvider = ({ children }) => {
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [location, setLocation] = useState({ lat: 39.8283, lng: -98.5795, name: 'United States' });
+  const [location, setLocation] = useState({ lat: 42.165726, lng: -74.948051, name: 'New York', type: 'state', abbr: 'NY' });
   const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
 
   const getAqiColor = (aqi) => {

@@ -7,10 +7,12 @@
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+  position: relative;
+  z-index: 50;
 }
 
 .location-info h1 {
@@ -51,10 +53,12 @@
 }
 
 .dashboard-content.overview {
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
   grid-template-areas: 
     "primary secondary"
     "forecast forecast";
+  align-items: start;
 }
 
 .dashboard-content.detailed {
@@ -77,13 +81,14 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  height: fit-content;
 }
 
 .secondary-section {
   grid-area: secondary;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  min-height: 600px;
+  max-height: 650px;
+  overflow: visible;
 }
 
 .forecast-section {

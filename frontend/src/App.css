@@ -192,3 +192,18 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+.dashboard {
+  position: relative;
+  z-index: 1;
+}
+
+.location-selector {
+  position: relative;
+  z-index: 100;
+}
+
+.location-dropdown {
+  position: absolute;
+  z-index: 1001;
+}

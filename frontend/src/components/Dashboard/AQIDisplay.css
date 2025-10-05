@@ -1,174 +1,275 @@
-.aqi-display {
+/* Modern AQI Display Styles */
+
+.aqi-display-modern {
+  width: 100%;
+  height: 100%;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aqi-card {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 32px;
   background: var(--bg-card);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: var(--shadow-card);
+  border-radius: 24px;
   border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+  min-height: 400px;
 }
 
-.aqi-main {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
+/* Dark theme gradient */
+[data-theme="dark"] .aqi-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.aqi-circle {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Light theme white background */
+[data-theme="light"] .aqi-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.aqi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 15px 50px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Circular AQI Gauge */
+.aqi-circle-container {
   position: relative;
+  width: 180px;
+  height: 180px;
   flex-shrink: 0;
 }
 
-.aqi-inner {
-  width: 90px;
-  height: 90px;
-  background: var(--bg-card);
-  border-radius: 50%;
+.aqi-circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
+}
+
+.aqi-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.aqi-value-large {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -2px;
+  text-shadow: 0 2px 10px currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.aqi-label-small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+
+/* Info Section */
+.aqi-info-modern {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.aqi-status-badge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.aqi-value {
-  font-size: 2.5rem;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+  width: fit-content;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.aqi-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.aqi-info {
-  flex: 1;
-}
-
-.aqi-status {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0 0 0.5rem 0;
-}
-
-.aqi-location {
-  color: var(--text-secondary);
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-}
-
-.aqi-trend {
+.aqi-location-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.location-icon {
+  font-size: 20px;
+}
+
+.location-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.aqi-trend-row {
+  display: flex;
+  align-items: center;
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
 .trend-icon {
-  font-size: 1.2rem;
+  font-size: 16px;
 }
 
 .trend-text {
-  font-weight: 500;
-  color: var(--text-secondary);
+  text-transform: capitalize;
 }
 
-.health-message {
+.health-message-modern {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--text-secondary);
-  line-height: 1.5;
-  margin: 0;
-  font-size: 0.95rem;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border-left: 3px solid rgba(59, 130, 246, 0.5);
 }
 
-.aqi-details {
-  border-top: 1px solid var(--border-color);
-  padding-top: 1.5rem;
+/* Metadata Section */
+.aqi-metadata {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
 }
 
-.detail-item {
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.metadata-item:hover {
+  background: var(--hover-bg);
+  border-color: var(--border-color);
+  transform: translateY(-2px);
+}
+
+.metadata-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.metadata-content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
+  flex: 1;
 }
 
-.detail-label {
-  font-size: 0.85rem;
+.metadata-label {
+  font-size: 12px;
   color: var(--text-secondary);
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.detail-value {
-  font-weight: 600;
+.metadata-value {
+  font-size: 14px;
   color: var(--text-primary);
+  font-weight: 600;
 }
 
-/* Compact view */
-.aqi-display.compact {
-  padding: 1rem;
+/* Compact View */
+.aqi-display-modern.compact .aqi-card {
+  padding: 20px;
+  gap: 20px;
 }
 
-.aqi-display.compact .aqi-main {
-  gap: 1rem;
-  margin-bottom: 0;
+.aqi-display-modern.compact .aqi-circle-container {
+  width: 120px;
+  height: 120px;
 }
 
-.aqi-display.compact .aqi-circle {
-  width: 80px;
-  height: 80px;
+.aqi-display-modern.compact .aqi-value-large {
+  font-size: 40px;
 }
 
-.aqi-display.compact .aqi-inner {
-  width: 60px;
-  height: 60px;
+.aqi-display-modern.compact .aqi-status-badge {
+  font-size: 14px;
+  padding: 6px 12px;
 }
 
-.aqi-display.compact .aqi-value {
-  font-size: 1.8rem;
-}
-
-.aqi-display.compact .aqi-status {
-  font-size: 1.2rem;
-}
-
-.aqi-display.compact .aqi-location {
-  font-size: 0.9rem;
-  margin-bottom: 0;
-}
-
-/* Detailed view */
-.aqi-display.detailed .aqi-circle {
-  width: 140px;
-  height: 140px;
-}
-
-.aqi-display.detailed .aqi-inner {
-  width: 110px;
-  height: 110px;
-}
-
-.aqi-display.detailed .aqi-value {
-  font-size: 3rem;
-}
-
+/* Responsive Design */
 @media (max-width: 768px) {
-  .aqi-main {
+  .aqi-card {
     flex-direction: column;
     text-align: center;
-    gap: 1rem;
+    padding: 24px;
   }
-  
-  .aqi-details {
+
+  .aqi-info-modern {
+    align-items: center;
+  }
+
+  .aqi-status-badge,
+  .aqi-location-row,
+  .aqi-trend-row {
+    justify-content: center;
+  }
+
+  .health-message-modern {
+    text-align: left;
+  }
+
+  .aqi-metadata {
     grid-template-columns: 1fr;
   }
 }
