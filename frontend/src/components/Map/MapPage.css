@@ -103,8 +103,8 @@
 
 .map-sidebar {
   width: 380px; /* Expanded width for more space */
-  background: var(--bg-card);
-  border-left: 1px solid var(--border-color);
+
+
   padding: 2rem 1.5rem 2rem 1.5rem; /* Increased top and bottom padding */
   overflow-y: auto;
   display: flex;
@@ -112,7 +112,7 @@
   gap: 1.5rem;
   flex-shrink: 0; /* Prevent sidebar from shrinking */
   box-sizing: border-box;
-  min-height: 100%; /* Ensure full height */
+
 }
 
 .station-details h3,
@@ -136,6 +136,7 @@
   padding: 1.5rem;
   border: 1px solid var(--border-color);
   margin-top: 0;
+  height: 330px;
 }
 
 .legend h3 {
@@ -145,7 +146,9 @@
 .legend-items {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1.5rem;
+  justify-content: center;
+
 }
 
 .legend-item {
@@ -169,6 +172,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
+  height: 330px;
 }
 
 .station-info h4 {
@@ -261,7 +265,17 @@
   border-radius: 12px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
-  margin-bottom: 1rem; /* Add bottom margin to ensure visibility */
+ 
+  height: 330px;
+}
+
+.map-details {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  align-items: center;
+  justify-content: center;
+
 }
 
 .stats-grid {

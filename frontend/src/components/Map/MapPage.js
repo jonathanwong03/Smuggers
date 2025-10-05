@@ -245,7 +245,7 @@ const MapPage = () => {
   }
 
   return (
-    <div className="map-page">
+    <div className="map-page" style={{backgroundColor: "white"}}>
       <div className="map-header">
         <div className="map-title">
           <h1>🗺️ Air Quality Map</h1>
@@ -366,112 +366,115 @@ const MapPage = () => {
         </MapContainer>
       </div>
 
-      <div className="map-sidebar" style={{marginTop: "550px", marginLeft: "800px", width: "500px"}}>
-        <div className="legend">
-          <h3>AQI Legend</h3>
-          <div className="legend-items">
-            <div className="legend-item">
-              <div className="legend-color" style={{ backgroundColor: '#00e400' }}></div>
-              <span>0-50 Good</span>
-            </div>
-            <div className="legend-item">
-              <div className="legend-color" style={{ backgroundColor: '#ffff00' }}></div>
-              <span>51-100 Moderate</span>
-            </div>
-            <div className="legend-item">
-              <div className="legend-color" style={{ backgroundColor: '#ff7e00' }}></div>
-              <span>101-150 Unhealthy for Sensitive</span>
-            </div>
-            <div className="legend-item">
-              <div className="legend-color" style={{ backgroundColor: '#ff0000' }}></div>
-              <span>151-200 Unhealthy</span>
-            </div>
-            <div className="legend-item">
-              <div className="legend-color" style={{ backgroundColor: '#8f3f97' }}></div>
-              <span>201-300 Very Unhealthy</span>
-            </div>
-            <div className="legend-item">
-              <div className="legend-color" style={{ backgroundColor: '#7e0023' }}></div>
-              <span>301+ Hazardous</span>
+      <div className="map-sidebar" style={{marginTop: "500px", height: "100%", width: "100%"}}>
+        <div className="map-details" >
+          <div className="legend" style={{width: "30%"}}>
+            <h3>AQI Legend</h3>
+            <div className="legend-items">
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#00e400' }}></div>
+                <span>0-50 Good</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#ffff00' }}></div>
+                <span>51-100 Moderate</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#ff7e00' }}></div>
+                <span>101-150 Unhealthy for Sensitive</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#ff0000' }}></div>
+                <span>151-200 Unhealthy</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#8f3f97' }}></div>
+                <span>201-300 Very Unhealthy</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color" style={{ backgroundColor: '#7e0023' }}></div>
+                <span>301+ Hazardous</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {selectedStation && (
-          <div className="station-details">
-            <h3>Station Details</h3>
-            <div className="station-info">
-              <h4>{selectedStation.name}</h4>
-              <div className="detail-grid">
-                <div className="detail-item">
-                  <span className="label">AQI</span>
-                  <span 
-                    className="value aqi-value"
-                    style={{ color: getAqiColor(selectedStation.aqi) }}
+          {selectedStation && (
+            <div className="station-details" style={{width: "30%"}}>
+              <h3>Station Details</h3>
+              <div className="station-info">
+                <h4>{selectedStation.name}</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">AQI</span>
+                    <span 
+                      className="value aqi-value"
+                      style={{ color: getAqiColor(selectedStation.aqi) }}
+                    >
+                      {selectedStation.aqi}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Status</span>
+                    <span className="value">{getAqiLabel(selectedStation.aqi)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">PM2.5</span>
+                    <span className="value">{selectedStation.pm25.toFixed(1)} μg/m³</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">PM10</span>
+                    <span className="value">{selectedStation.pm10.toFixed(1)} μg/m³</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">NO₂</span>
+                    <span className="value">{selectedStation.no2.toFixed(1)} μg/m³</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">O₃</span>
+                    <span className="value">{selectedStation.o3.toFixed(1)} μg/m³</span>
+                  </div>
+                </div>
+                <div className="station-actions">
+                  <button 
+                    className="btn btn-danger"
+                    onClick={() => setSelectedStation(null)}
                   >
-                    {selectedStation.aqi}
-                  </span>
+                    Close
+                  </button>
                 </div>
-                <div className="detail-item">
-                  <span className="label">Status</span>
-                  <span className="value">{getAqiLabel(selectedStation.aqi)}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">PM2.5</span>
-                  <span className="value">{selectedStation.pm25.toFixed(1)} μg/m³</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">PM10</span>
-                  <span className="value">{selectedStation.pm10.toFixed(1)} μg/m³</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">NO₂</span>
-                  <span className="value">{selectedStation.no2.toFixed(1)} μg/m³</span>
-                </div>
-                <div className="detail-item">
-                  <span className="label">O₃</span>
-                  <span className="value">{selectedStation.o3.toFixed(1)} μg/m³</span>
-                </div>
-              </div>
-              <div className="station-actions">
-                <button 
-                  className="btn btn-danger"
-                  onClick={() => setSelectedStation(null)}
-                >
-                  Close
-                </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="map-stats">
-          <h3>Statistics</h3>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <span className="stat-value">{mapData.length}</span>
-              <span className="stat-label">Monitoring Stations</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-value">
-                {mapData.length > 0 ? 
-                  Math.round(mapData.reduce((sum, station) => sum + (station.aqi || 0), 0) / mapData.length) : 
-                  0
-                }
-              </span>
-              <span className="stat-label">Average AQI</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-value">
-                {mapData.length > 0 ? 
-                  Math.max(...mapData.map(s => s.aqi || 0)) : 
-                  0
-                }
-              </span>
-              <span className="stat-label">Highest AQI</span>
+          <div className="map-stats" style={{width: "30%"}}>
+            <h3>Statistics</h3>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <span className="stat-value">{mapData.length}</span>
+                <span className="stat-label">Monitoring Stations</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-value">
+                  {mapData.length > 0 ? 
+                    Math.round(mapData.reduce((sum, station) => sum + (station.aqi || 0), 0) / mapData.length) : 
+                    0
+                  }
+                </span>
+                <span className="stat-label">Average AQI</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-value">
+                  {mapData.length > 0 ? 
+                    Math.max(...mapData.map(s => s.aqi || 0)) : 
+                    0
+                  }
+                </span>
+                <span className="stat-label">Highest AQI</span>
+              </div>
             </div>
           </div>
         </div>
+                
       </div>
     </div>
   );
