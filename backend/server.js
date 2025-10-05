@@ -20,8 +20,8 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Store parsed CSV data
-let csvData = [];
+// Load and parse CSV data
+let airQualityData = [];
 
 // Location mapping from CSV
 const locationMap = {
@@ -68,6 +68,8 @@ function parseCSV(csvText) {
 // Store both datasets
 let nycData = [];
 let usData = [];
+let csvData = [];
+let airQualityData = [];
 
 // Load CSV data on server start
 function loadCSVData() {
@@ -106,62 +108,53 @@ function loadCSVData() {
   
   if (!success) {
     console.log('Creating sample data instead...');
-    csvData = createSampleData();
+    // Create basic sample data if files can't be loaded
+    csvData = [];
   } else {
     csvData = [...nycData, ...usData]; // Combine for backward compatibility
+    airQualityData = nycData; // For backward compatibility with some endpoints
   }
   
   return success;
 }
 
-// Create sample data if CSV not found
-function createSampleData() {
-  const locations = ['407', '107', '414', '307'];
-  const data = [];
-  
-  for (let i = 0; i < 50; i++) {
-    data.push({
-      'Unique ID': `${100000 + i}`,
-      'Indicator ID': Math.random() > 0.5 ? '375' : '365',
-      'Name': Math.random() > 0.5 ? 'Nitrogen dioxide Mean' : 'Fine particles Mean',
-      'Measure': Math.random() > 0.5 ? 'ppb' : 'mcg/m3',
-      'Geo Join ID': locations[Math.floor(Math.random() * locations.length)],
-      'Geo Place Name': 'New York City',
-      'Time Period': '2024',
-      'Start_Date': '2024-01-01',
-      'Data Value': (Math.random() * 50 + 20).toFixed(2)
-    });
+// Load data on startup
+loadCSVData();
+
+// Helper function to convert air quality data to AQI-like values
+function convertToAQI(value, pollutant) {
+  // Simple conversion for demo purposes
+  // In reality, you'd use EPA's AQI calculation formulas
+  if (pollutant.includes('NO2')) {
+    // NO2 in ppb to AQI approximation
+    const ppb = parseFloat(value);
+    if (ppb <= 53) return Math.round(ppb * 50 / 53);
+    if (ppb <= 100) return Math.round(51 + (ppb - 53) * 49 / 47);
+    if (ppb <= 360) return Math.round(101 + (ppb - 100) * 49 / 260);
+    return Math.min(200, Math.round(151 + (ppb - 360) * 49 / 649));
   }
   
-  return data;
+  if (pollutant.includes('PM 2.5')) {
+    // PM2.5 in mcg/m3 to AQI approximation
+    const mcg = parseFloat(value);
+    if (mcg <= 12) return Math.round(mcg * 50 / 12);
+    if (mcg <= 35.4) return Math.round(51 + (mcg - 12) * 49 / 23.4);
+    if (mcg <= 55.4) return Math.round(101 + (mcg - 35.4) * 49 / 20);
+    return Math.min(200, Math.round(151 + (mcg - 55.4) * 49 / 94.6));
+  }
+  
+  return Math.round(Math.random() * 100 + 20); // Fallback
 }
 
-// Calculate AQI from pollutant values
-function calculateAQI(no2Value, pm25Value) {
-  // Simplified AQI calculation
-  // NO2: Good < 53 ppb, Moderate 54-100, Unhealthy > 100
-  // PM2.5: Good < 12, Moderate 12-35.4, Unhealthy > 35.4
-  
-  let aqi = 50; // Default good
-  
-  if (pm25Value) {
-    const pm25 = parseFloat(pm25Value);
-    if (pm25 <= 12.0) aqi = Math.round((50 / 12.0) * pm25);
-    else if (pm25 <= 35.4) aqi = Math.round(((100 - 51) / (35.4 - 12.1)) * (pm25 - 12.1) + 51);
-    else if (pm25 <= 55.4) aqi = Math.round(((150 - 101) / (55.4 - 35.5)) * (pm25 - 35.5) + 101);
-    else aqi = 150;
-  }
-  
-  if (no2Value) {
-    const no2 = parseFloat(no2Value);
-    const no2AQI = Math.min(150, Math.round(no2 * 1.5));
-    aqi = Math.max(aqi, no2AQI);
-  }
-  
-  return Math.round(aqi);
+function getAQILevel(aqi) {
+  if (aqi <= 50) return 'Good';
+  if (aqi <= 100) return 'Moderate';
+  if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
+  if (aqi <= 200) return 'Unhealthy';
+  if (aqi <= 300) return 'Very Unhealthy';
+  return 'Hazardous';
 }
 
-// Get AQI category
 function getAQICategory(aqi) {
   if (aqi <= 50) return { level: 'Good', color: '#00e400' };
   if (aqi <= 100) return { level: 'Moderate', color: '#ffff00' };
@@ -169,6 +162,22 @@ function getAQICategory(aqi) {
   if (aqi <= 200) return { level: 'Unhealthy', color: '#ff0000' };
   if (aqi <= 300) return { level: 'Very Unhealthy', color: '#8f3f97' };
   return { level: 'Hazardous', color: '#7e0023' };
+}
+
+function calculateAQI(no2, pm25) {
+  let maxAqi = 0;
+  
+  if (no2 !== null && no2 !== undefined) {
+    const no2Aqi = convertToAQI(no2, 'NO2');
+    maxAqi = Math.max(maxAqi, no2Aqi);
+  }
+  
+  if (pm25 !== null && pm25 !== undefined) {
+    const pm25Aqi = convertToAQI(pm25, 'PM2.5');
+    maxAqi = Math.max(maxAqi, pm25Aqi);
+  }
+  
+  return maxAqi || 50; // Default to moderate if no data
 }
 
 // Get latest data for a location
@@ -323,7 +332,7 @@ function getStateData(stateName) {
 // Main endpoint - matches your frontend
 app.get('/api/air-quality', (req, res) => {
   try {
-    console.log('📊 Air quality data requested from CSV');
+    const { lat, lng } = req.query;
     
     // Get location from query parameters
     let locationInfo;
@@ -658,14 +667,11 @@ app.get('/api/compare', (req, res) => {
   const comparison = locations.map(geoId => {
     const data = getLocationData(geoId);
     if (!data) return null;
-    
-    const aqi = calculateAQI(data.no2, data.pm25);
+
     
     return {
       location: data.location,
-      geoId: geoId,
-      aqi: aqi,
-      category: getAQICategory(aqi),
+      aqi: calculateAQI(data.no2, data.pm25),
       no2: data.no2,
       pm25: data.pm25
     };
@@ -728,10 +734,59 @@ app.get('/api/map-stats', (req, res) => {
   }
 });
 
-// Health check
+app.get('/api/aqi/current', (req, res) => {
+  try {
+    const { lat, lon } = req.query;
+    
+    // Find relevant data from CSV
+    const relevantData = airQualityData.filter(record => 
+      record['Data Value'] && record['Data Value'] !== ''
+    );
+    
+    if (relevantData.length === 0) {
+      return res.json({ aqi: 45, level: 'Good' });
+    }
+    
+    const randomRecord = relevantData[Math.floor(Math.random() * Math.min(5, relevantData.length))];
+    const aqi = convertToAQI(randomRecord['Data Value'], randomRecord['Name']);
+    
+    res.json({
+      aqi,
+      level: getAQILevel(aqi),
+      pollutant: randomRecord['Name'],
+      location: randomRecord['Geo Place Name']
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch current AQI' });
+  }
+});
+
+app.get('/api/aqi/historical', (req, res) => {
+  try {
+    const { lat, lon, startDate, endDate } = req.query;
+    
+    // Filter data by date range if available
+    const historicalData = airQualityData.filter(record => 
+      record['Data Value'] && record['Data Value'] !== ''
+    ).slice(0, 50) // Limit results
+      .map(record => ({
+        date: record['Start_Date'] || new Date().toISOString(),
+        aqi: convertToAQI(record['Data Value'], record['Name']),
+        pollutant: record['Name'],
+        location: record['Geo Place Name'],
+        value: record['Data Value'],
+        unit: record['Measure Info']
+      }));
+    
+    res.json(historicalData);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch historical data' });
+  }
+});
+
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
-    success: true,
     status: 'healthy',
     dataSource: 'CSV Files',
     nycRecords: nycData.length,
@@ -745,61 +800,18 @@ app.get('/api/health', (req, res) => {
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    name: 'Air Quality API (CSV Data)',
-    version: '1.0.0',
-    dataSource: 'Historical CSV Records',
-    recordCount: csvData.length,
-    endpoints: {
-      main: '/api/air-quality?location=407',
-      locations: '/api/locations',
-      historical: '/api/historical/:geoId',
-      trends: '/api/trends/:geoId?pollutant=375',
-      compare: '/api/compare?locations=407,107,414',
-      health: '/api/health'
-    }
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Endpoint not found',
-    availableEndpoints: [
+    message: 'Air Quality API',
+    endpoints: [
       '/api/air-quality',
-      '/api/locations',
-      '/api/historical/:geoId',
-      '/api/trends/:geoId',
-      '/api/compare',
+      '/api/forecast',
+      '/api/aqi/current',
+      '/api/aqi/historical',
       '/api/health'
     ]
   });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    error: err.message
-  });
-});
-
-// ============================================
-// START SERVER
-// ============================================
-
 app.listen(PORT, () => {
-  console.log('\n===========================================');
-  console.log('  🌍 Air Quality API (CSV Data Source)');
-  console.log('===========================================');
-  console.log(`✓ Server: http://localhost:${PORT}`);
-  console.log(`✓ Health: http://localhost:${PORT}/api/health`);
-  console.log(`✓ API: http://localhost:${PORT}/api/air-quality`);
-  console.log('===========================================\n');
-  
-  // Load CSV data
-  loadCSVData();
-  
-  console.log('📊 Server ready!\n');
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Loaded ${airQualityData.length} air quality records from CSV`);
 });

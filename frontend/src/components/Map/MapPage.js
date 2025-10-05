@@ -167,6 +167,14 @@ const MapPage = () => {
     fetchMapData();
   }, []);
 
+  // Force map resize on component mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
   const createCustomIcon = (aqi) => {
     const color = getAqiColor(aqi);
     return L.divIcon({
@@ -286,7 +294,8 @@ const MapPage = () => {
         </div>
       </div>
 
-      <div className="map-container">
+      <div className="map-content">
+        <div className="map-container">
         <MapContainer
           center={[39.8283, -98.5795]} // Center of USA
           zoom={4} // Zoom level to show entire continental US
@@ -360,9 +369,9 @@ const MapPage = () => {
             />
           ))}
         </MapContainer>
-      </div>
+        </div>
 
-      <div className="map-sidebar">
+        <div className="map-sidebar">
         <div className="legend">
           <h3>AQI Legend</h3>
           <div className="legend-items">
@@ -470,6 +479,7 @@ const MapPage = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
