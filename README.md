@@ -26,7 +26,7 @@ This project is a web-based application to forecast air quality by integrating r
     ```
 3.  Start the development server:
     ```bash
-    npm run dev
+    npm start
     ```
     The server will be running on `http://localhost:3001`.
 
