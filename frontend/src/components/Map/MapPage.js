@@ -17,7 +17,7 @@ const MapPage = () => {
   const { location, updateLocation, getAqiColor } = useAirQuality();
   const [mapData, setMapData] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
-  const [mapView, setMapView] = useState('heatmap'); // heatmap, stations, both
+  const [mapView, setMapView] = useState('stations'); // heatmap, stations, both
   const [loading, setLoading] = useState(true);
 
   // US air quality monitoring stations based on real data
@@ -167,30 +167,46 @@ const MapPage = () => {
     fetchMapData();
   }, []);
 
-  const createCustomIcon = (aqi) => {
+  const createCustomIcon = (aqi, isSelected = false) => {
     const color = getAqiColor(aqi);
+    const size = isSelected ? 28 : 24;
+    const borderWidth = isSelected ? 3 : 2;
+    
+    // Better text color logic for visibility
+    const getTextColor = (bgColor, aqiValue) => {
+      // For green (good) and yellow (moderate), use black text
+      if (aqiValue <= 100) return 'black';
+      // For orange and red, use white text
+      if (aqiValue <= 200) return 'white';
+      // For purple and maroon, use white text
+      return 'white';
+    };
+    
     return L.divIcon({
       className: 'custom-marker',
       html: `
         <div style="
           background-color: ${color};
-          width: 20px;
-          height: 20px;
+          width: ${size - 4}px;
+          height: ${size - 4}px;
           border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          border: ${borderWidth}px solid ${isSelected ? '#007bff' : 'white'};
+          box-shadow: 0 2px 6px rgba(0,0,0,${isSelected ? '0.4' : '0.3'});
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 10px;
+          font-size: ${isSelected ? '11px' : '10px'};
           font-weight: bold;
-          color: ${aqi > 100 ? 'white' : 'black'};
+          color: ${getTextColor(color, aqi)};
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-shadow: ${aqi <= 100 ? 'none' : '0 1px 2px rgba(0,0,0,0.3)'};
         ">
           ${aqi}
         </div>
       `,
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
+      iconSize: [size, size],
+      iconAnchor: [size/2, size/2]
     });
   };
 
@@ -203,44 +219,18 @@ const MapPage = () => {
     return 'Hazardous';
   };
 
-  const handleMapClick = (e) => {
-    const { lat, lng } = e.latlng;
+  const handleStationClick = (station) => {
+    // Set the selected station for sidebar display
+    setSelectedStation(station);
     
-    // Find the closest state to the clicked coordinates
-    const findClosestState = (clickLat, clickLng) => {
-      let closestState = null;
-      let minDistance = Infinity;
-      
-      mapData.forEach(station => {
-        const distance = Math.sqrt(
-          Math.pow(station.lat - clickLat, 2) + Math.pow(station.lng - clickLng, 2)
-        );
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestState = station;
-        }
-      });
-      
-      return closestState;
-    };
-    
-    const closestState = findClosestState(lat, lng);
-    
-    if (closestState) {
-      updateLocation({
-        lat: closestState.lat,
-        lng: closestState.lng,
-        name: closestState.name,
-        type: 'state',
-        state: closestState.name
-      });
-    } else {
-      updateLocation({
-        lat: lat,
-        lng: lng,
-        name: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`
-      });
-    }
+    // Update the location context without changing map view
+    updateLocation({
+      lat: station.lat,
+      lng: station.lng,
+      name: station.name,
+      type: 'state',
+      state: station.name
+    });
   };
 
   if (loading) {
@@ -283,6 +273,15 @@ const MapPage = () => {
               Both
             </button>
           </div>
+          
+          {selectedStation && (
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setSelectedStation(null)}
+            >
+              Clear Selection
+            </button>
+          )}
         </div>
       </div>
 
@@ -291,7 +290,9 @@ const MapPage = () => {
           center={[39.8283, -98.5795]} // Center of USA
           zoom={4} // Zoom level to show entire continental US
           style={{ height: '100%', width: '100%' }}
-          onClick={handleMapClick}
+          zoomControl={true}
+          scrollWheelZoom={true}
+          doubleClickZoom={false}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -315,9 +316,9 @@ const MapPage = () => {
             <Marker
               key={station.id}
               position={[station.lat, station.lng]}
-              icon={createCustomIcon(station.aqi)}
+              icon={createCustomIcon(station.aqi, selectedStation?.id === station.id)}
               eventHandlers={{
-                click: () => setSelectedStation(station)
+                click: () => handleStationClick(station)
               }}
             >
               <Popup>
@@ -353,16 +354,19 @@ const MapPage = () => {
             <Circle
               key={`circle-${station.id}`}
               center={[station.lat, station.lng]}
-              radius={station.aqi * 50} // Radius based on AQI
+              radius={station.aqi * 1000} // Radius based on AQI (increased for better visibility)
               fillColor={getAqiColor(station.aqi)}
               fillOpacity={0.3}
               stroke={false}
+              eventHandlers={{
+                click: () => handleStationClick(station)
+              }}
             />
           ))}
         </MapContainer>
       </div>
 
-      <div className="map-sidebar">
+      <div className="map-sidebar" style={{marginTop: "550px", marginLeft: "800px", width: "500px"}}>
         <div className="legend">
           <h3>AQI Legend</h3>
           <div className="legend-items">
@@ -429,16 +433,14 @@ const MapPage = () => {
                   <span className="value">{selectedStation.o3.toFixed(1)} μg/m³</span>
                 </div>
               </div>
-              <button 
-                className="btn btn-primary"
-                onClick={() => updateLocation({
-                  lat: selectedStation.lat,
-                  lng: selectedStation.lng,
-                  name: selectedStation.name
-                })}
-              >
-                Set as Location
-              </button>
+              <div className="station-actions">
+                <button 
+                  className="btn btn-danger"
+                  onClick={() => setSelectedStation(null)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

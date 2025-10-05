@@ -12,6 +12,7 @@
     "express": "^4.21.2"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.20",
     "nodemon": "^2.0.22"
   }
 }

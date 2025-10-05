@@ -12,6 +12,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const dataFetcher = require('./services/dataFetcher');
 
 const app = express();
 const PORT = 3001;
@@ -320,95 +321,60 @@ function getStateData(stateName) {
 // API ROUTES
 // ============================================
 
-// Main endpoint - matches your frontend
-app.get('/api/air-quality', (req, res) => {
+// Main endpoint - matches your frontend (using DataFetcher service)
+app.get('/api/air-quality', async (req, res) => {
   try {
-    console.log('📊 Air quality data requested from CSV');
+    console.log('📊 Air quality data requested from CSV via DataFetcher');
     
-    // Get location from query parameters
-    let locationInfo;
-    if (req.query.lat && req.query.lng) {
-      locationInfo = getLocationByCoords(parseFloat(req.query.lat), parseFloat(req.query.lng));
-    } else if (req.query.state) {
-      locationInfo = { type: 'state', id: req.query.state };
-    } else {
-      locationInfo = { type: 'nyc', id: req.query.location || '107' };
+    // Get location parameters
+    const latitude = req.query.lat ? parseFloat(req.query.lat) : 40.7128;
+    const longitude = req.query.lng ? parseFloat(req.query.lng) : -74.0060;
+    const stateName = req.query.state || null;
+    
+    // Use DataFetcher service to get all data
+    const allData = await dataFetcher.fetchAllData(latitude, longitude, stateName);
+    
+    // Get state-specific data if available
+    let stateData = null;
+    if (stateName) {
+      stateData = dataFetcher.getStateData(stateName);
     }
     
-    // Get data based on location type
-    let data;
-    if (locationInfo.type === 'state') {
-      data = getStateData(locationInfo.id);
-    } else {
-      data = getLocationData(locationInfo.id);
-    }
-    
-    if (!data) {
-      return res.status(404).json({
-        error: 'No data found for this location',
-        availableLocations: locationInfo.type === 'state' ? 
-          [...new Set(usData.map(r => r['StateName']))] : 
-          Object.keys(locationMap)
-      });
-    }
-    
-    // Calculate AQI based on available data
-    let aqi;
-    if (data.type === 'state') {
-      // For state data, use PM2.5 concentration to estimate AQI
-      if (data.pm25) {
-        const pm25 = data.pm25;
-        if (pm25 <= 12.0) aqi = Math.round((50 / 12.0) * pm25);
-        else if (pm25 <= 35.4) aqi = Math.round(((100 - 51) / (35.4 - 12.1)) * (pm25 - 12.1) + 51);
-        else if (pm25 <= 55.4) aqi = Math.round(((150 - 101) / (55.4 - 35.5)) * (pm25 - 35.5) + 101);
-        else aqi = 150;
-      } else {
-        aqi = 75; // Default moderate
-      }
-    } else {
-      aqi = calculateAQI(data.no2, data.pm25);
-    }
-    
+    // Calculate primary AQI from ground station data
+    const aqi = allData.ground.aqi;
     const category = getAQICategory(aqi);
     
     // Format response for your frontend
     const response = {
-      location: data.location,
+      location: stateName || 'New York City',
       aqi: aqi,
-      pollutants: data.type === 'state' ? [
-        { name: "PM2.5", value: data.pm25 || 0 },
-        { name: "O3", value: data.ozone || 0 },
-        { name: "NO2", value: Math.random() * 30 + 10 },
-        { name: "SO2", value: Math.random() * 0.02 },
-        { name: "PM10", value: (data.pm25 || 0) * 1.5 },
-        { name: "CO", value: Math.random() * 2 }
-      ] : [
-        { name: "NO2", value: data.no2 || 0 },
-        { name: "PM2.5", value: data.pm25 || 0 },
-        { name: "O3", value: data.o3 || Math.random() * 0.1 },
-        { name: "SO2", value: Math.random() * 0.02 },
-        { name: "PM10", value: (data.pm25 || 0) * 1.5 },
+      pollutants: [
+        { name: "PM2.5", value: allData.ground.pm25 },
+        { name: "PM10", value: allData.ground.pm10 },
+        { name: "NO2", value: allData.tempo.no2 * 1000 }, // Convert ppm to ppb
+        { name: "O3", value: allData.tempo.o3 * 1000 }, // Convert ppm to ppb
+        { name: "SO2", value: allData.tempo.so2 * 1000 }, // Convert ppm to ppb
         { name: "CO", value: Math.random() * 2 }
       ],
       weather: {
-        temperature: 20 + Math.random() * 10,
-        humidity: 50 + Math.random() * 30,
-        windSpeed: Math.random() * 20,
-        windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.floor(Math.random() * 8)],
-        pressure: 1013 + Math.random() * 20 - 10,
-        visibility: 8 + Math.random() * 4
+        temperature: allData.weather.temperature,
+        humidity: allData.weather.humidity,
+        windSpeed: allData.weather.windSpeed,
+        windDirection: allData.weather.windDirection,
+        pressure: allData.weather.pressure,
+        visibility: allData.weather.visibility
       },
       category: category,
-      primaryPollutant: data.pm25 > (data.no2 || 0) / 2 ? 'PM2.5' : 'NO2',
-      lastUpdated: data.lastUpdated,
+      primaryPollutant: allData.ground.pm25 > 25 ? 'PM2.5' : 'NO2',
+      lastUpdated: allData.timestamp,
       timestamp: new Date().toISOString(),
-      source: data.type === 'state' ? 'US EPA Air Quality Data' : 'NYC Air Quality Historical Data',
+      source: allData.dataSource,
       trend: Math.random() > 0.5 ? (Math.random() > 0.5 ? 1 : -1) : 0,
-      dataType: data.type,
-      counties: data.counties || null
+      dataType: stateName ? 'state' : 'city',
+      counties: stateData ? stateData.counties : null
     };
     
-    console.log(`✓ Sent data for ${data.location} - AQI: ${aqi} (${data.type})`);
+    console.log(`✓ Sent data for ${response.location} - AQI: ${aqi} (${response.dataType})`);
     res.json(response);
     
   } catch (error) {
@@ -420,53 +386,17 @@ app.get('/api/air-quality', (req, res) => {
   }
 });
 
-// Forecast endpoint for frontend
-app.get('/api/forecast', (req, res) => {
+// Forecast endpoint for frontend (using DataFetcher service)
+app.get('/api/forecast', async (req, res) => {
   try {
     console.log('📈 Forecast data requested');
     
-    // Get location from query parameters
-    let locationInfo;
-    if (req.query.state) {
-      locationInfo = { type: 'state', id: req.query.state };
-    } else if (req.query.lat && req.query.lng) {
-      locationInfo = getLocationByCoords(parseFloat(req.query.lat), parseFloat(req.query.lng));
-    } else {
-      locationInfo = { type: 'nyc', id: req.query.location || '107' };
-    }
-    
+    const stateName = req.query.state || null;
     const hours = parseInt(req.query.hours) || 24;
     
-    // Get data based on location type
-    let data;
-    if (locationInfo.type === 'state') {
-      data = getStateData(locationInfo.id);
-    } else {
-      data = getLocationData(locationInfo.id);
-    }
-    
-    if (!data) {
-      return res.status(404).json({
-        error: 'No data found for this location'
-      });
-    }
-    
-    // Generate forecast based on historical data with some variation
-    let baseAqi;
-    if (data.type === 'state') {
-      // For state data, use PM2.5 concentration to estimate AQI
-      if (data.pm25) {
-        const pm25 = data.pm25;
-        if (pm25 <= 12.0) baseAqi = Math.round((50 / 12.0) * pm25);
-        else if (pm25 <= 35.4) baseAqi = Math.round(((100 - 51) / (35.4 - 12.1)) * (pm25 - 12.1) + 51);
-        else if (pm25 <= 55.4) baseAqi = Math.round(((150 - 101) / (55.4 - 35.5)) * (pm25 - 35.5) + 101);
-        else baseAqi = 150;
-      } else {
-        baseAqi = 75; // Default moderate
-      }
-    } else {
-      baseAqi = calculateAQI(data.no2, data.pm25);
-    }
+    // Get current data to base forecast on
+    const currentData = await dataFetcher.fetchAllData(40.7128, -74.0060, stateName);
+    const baseAqi = currentData.ground.aqi;
     
     const forecast = [];
     
@@ -490,11 +420,14 @@ app.get('/api/forecast', (req, res) => {
       
       const forecastAqi = Math.max(10, Math.min(200, Math.round(baseAqi + variation)));
       
+      // Generate weather forecast
+      const weatherData = await dataFetcher.fetchWeatherData(stateName);
+      
       forecast.push({
         time: time.toISOString(),
         aqi: forecastAqi,
-        temperature: 20 + Math.sin(i * 0.2) * 10 + Math.random() * 5,
-        humidity: 50 + Math.cos(i * 0.15) * 20 + Math.random() * 10
+        temperature: weatherData.temperature + Math.sin(i * 0.2) * 5,
+        humidity: weatherData.humidity + Math.cos(i * 0.15) * 10
       });
     }
     
@@ -547,29 +480,24 @@ app.get('/api/locations', (req, res) => {
   });
 });
 
-// Get all US states
+// Get all US states (using DataFetcher service)
 app.get('/api/states', (req, res) => {
-  const states = [...new Set(usData.map(r => r['StateName']))]
-    .map(state => {
-      const stateData = usData.filter(r => r['StateName'] === state);
-      const latestYear = Math.max(...stateData.map(r => parseInt(r['ReportYear'])));
-      const counties = [...new Set(stateData.map(r => r['CountyName']))];
-      
-      return {
-        name: state,
-        counties: counties.length,
-        latestYear: latestYear,
-        dataPoints: stateData.length,
-        measures: [...new Set(stateData.map(r => r['MeasureName']))].length
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
-  
-  res.json({
-    success: true,
-    count: states.length,
-    states: states
-  });
+  try {
+    const states = dataFetcher.getAvailableStates();
+    
+    res.json({
+      success: true,
+      count: states.length,
+      states: states
+    });
+  } catch (error) {
+    console.error('❌ States Error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch states data',
+      message: error.message 
+    });
+  }
 });
 
 // Get counties for a specific state
@@ -677,28 +605,21 @@ app.get('/api/compare', (req, res) => {
   });
 });
 
-// Get map statistics
+// Get map statistics (using DataFetcher service)
 app.get('/api/map-stats', (req, res) => {
   try {
-    // Get all states with their data
-    const states = [...new Set(usData.map(r => r['StateName']))];
+    const states = dataFetcher.getAvailableStates();
     const stateStats = [];
     
-    states.forEach(stateName => {
-      const stateData = getStateData(stateName);
+    states.forEach(state => {
+      const stateData = dataFetcher.getStateData(state.name);
       if (stateData && stateData.pm25 !== null) {
-        // Calculate AQI from PM2.5
-        const pm25 = stateData.pm25;
-        let aqi;
-        if (pm25 <= 12.0) aqi = Math.round((50 / 12.0) * pm25);
-        else if (pm25 <= 35.4) aqi = Math.round(((100 - 51) / (35.4 - 12.1)) * (pm25 - 12.1) + 51);
-        else if (pm25 <= 55.4) aqi = Math.round(((150 - 101) / (55.4 - 35.5)) * (pm25 - 35.5) + 101);
-        else aqi = 150;
+        const aqi = dataFetcher.calculateAQI(stateData.pm25);
         
         stateStats.push({
-          state: stateName,
+          state: state.name,
           aqi: aqi,
-          pm25: pm25,
+          pm25: stateData.pm25,
           counties: stateData.counties
         });
       }
@@ -728,18 +649,25 @@ app.get('/api/map-stats', (req, res) => {
   }
 });
 
-// Health check
+// Health check (using DataFetcher service)
 app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    status: 'healthy',
-    dataSource: 'CSV Files',
-    nycRecords: nycData.length,
-    usRecords: usData.length,
-    totalRecords: csvData.length,
-    states: [...new Set(usData.map(r => r['StateName']))].length,
-    timestamp: new Date().toISOString()
-  });
+  try {
+    const stats = dataFetcher.getDataStats();
+    
+    res.json({
+      success: true,
+      status: 'healthy',
+      dataSource: 'CSV Files via DataFetcher Service',
+      ...stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Root endpoint
